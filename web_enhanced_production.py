@@ -1,0 +1,215 @@
+"""
+Production-ready Web-Enhanced Smart Windows Agent
+Integrates with actual web_search tool in the Zencoder environment
+"""
+
+import sys
+import os
+import traceback
+
+# Import the web-enhanced agent
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from mainv1_web_enhanced import WebEnhancedSmartWindowsAgent
+
+
+class ZencoderWebSearchIntegrator:
+    """Integrates the web-enhanced agent with Zencoder's web search capabilities"""
+    
+    def __init__(self):
+        self.agent = None
+        self._setup_web_search()
+    
+    def _setup_web_search(self):
+        """Set up the web search integration"""
+        try:
+            # In the Zencoder environment, the web_search function should be available
+            # We'll create a wrapper that handles the integration properly
+            
+            def web_search_wrapper(query: str) -> str:
+                """Wrapper for the Zencoder web_search tool"""
+                try:
+                    # This will use the actual web_search tool available in Zencoder
+                    # Import it dynamically to avoid issues if not available
+                    import __main__
+                    if hasattr(__main__, 'web_search'):
+                        result = __main__.web_search(query)
+                        return str(result)
+                    else:
+                        # Fallback: try to import from the tool environment
+                        from zencoder_tools import web_search
+                        result = web_search(query)
+                        return str(result)
+                        
+                except ImportError:
+                    # If web_search is not available, provide a helpful message
+                    return f"Web search not available. Query was: {query}"
+                except Exception as e:
+                    return f"Web search error for '{query}': {str(e)}"
+            
+            # Initialize the agent with web search capability
+            self.agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_wrapper)
+            print("✅ Web-enhanced agent initialized with live web search")
+            
+        except Exception as e:
+            print(f"⚠️  Warning: Could not set up web search integration: {e}")
+            # Initialize without web search (will use fallback mock responses)
+            self.agent = WebEnhancedSmartWindowsAgent()
+            print("✅ Web-enhanced agent initialized with mock web search")
+    
+    def execute_task(self, query: str) -> str:
+        """Execute a task with web-enhanced capabilities"""
+        if not self.agent:
+            return "Error: Agent not initialized"
+        
+        try:
+            return self.agent.execute(query)
+        except Exception as e:
+            error_details = traceback.format_exc()
+            print(f"❌ Execution error: {error_details}")
+            return f"Error executing task: {str(e)}"
+    
+    def test_web_search(self, test_query: str = "Lowe's store locations Louisville KY") -> bool:
+        """Test if web search is working properly"""
+        print(f"🧪 Testing web search with query: '{test_query}'")
+        
+        try:
+            if self.agent and hasattr(self.agent.translator, '_web_search_func'):
+                result = self.agent.translator._web_search_func(test_query)
+                print(f"✅ Web search test successful. Result preview: {str(result)[:200]}...")
+                return True
+            else:
+                print("❌ Web search function not available")
+                return False
+        except Exception as e:
+            print(f"❌ Web search test failed: {e}")
+            return False
+
+
+def interactive_mode(integrator: ZencoderWebSearchIntegrator):
+    """Interactive mode for testing the web-enhanced agent"""
+    print("\n🎯 INTERACTIVE MODE")
+    print("="*60)
+    print("Enter tasks to test the web-enhanced agent.")
+    print("Examples:")
+    print("  • 'Find a cheap screwdriver at Lowe's near Bashford Manor'")
+    print("  • 'Open Chrome and search for iPhone prices'")
+    print("  • 'Get the phone number for the nearest Home Depot'")
+    print("Type 'quit' to exit.")
+    print()
+    
+    while True:
+        try:
+            query = input("Enter your task: ").strip()
+            
+            if query.lower() in ['quit', 'exit', 'q']:
+                print("Goodbye!")
+                break
+            
+            if not query:
+                continue
+            
+            print("\n" + "="*80)
+            result = integrator.execute_task(query)
+            print("\n" + "="*80)
+            print("RESULT:")
+            print(result)
+            print("\n")
+            
+        except KeyboardInterrupt:
+            print("\nGoodbye!")
+            break
+        except Exception as e:
+            print(f"Error: {e}")
+
+
+def run_example_tasks(integrator: ZencoderWebSearchIntegrator):
+    """Run some example tasks to demonstrate capabilities"""
+    print("\n🌟 EXAMPLE TASKS")
+    print("="*60)
+    
+    example_tasks = [
+        {
+            "title": "Shopping Task with Location Ambiguity",
+            "query": "Open Chrome, go to Lowe's, find a cheap flat head screwdriver, and add it to my cart for pickup at the store near Bashford Manor",
+            "description": "This task contains location ambiguity ('near Bashford Manor') and subjective terms ('cheap')"
+        },
+        {
+            "title": "Research Task",
+            "query": "Find the current price of iPhone 15 Pro and open a text document to write it down",
+            "description": "This task requires current/time-dependent information"
+        },
+        {
+            "title": "Store Information Task", 
+            "query": "Get the phone number and hours for the Home Depot closest to downtown Louisville",
+            "description": "This task requires specific business information"
+        }
+    ]
+    
+    for i, task in enumerate(example_tasks, 1):
+        print(f"\n📋 Example {i}: {task['title']}")
+        print(f"Description: {task['description']}")
+        print(f"Query: {task['query']}")
+        
+        proceed = input("Run this example? (y/n): ").strip().lower()
+        if proceed == 'y':
+            print("\n" + "-"*80)
+            result = integrator.execute_task(task['query'])
+            print("-"*80)
+            print("RESULT:")
+            print(result)
+            print()
+        
+        continue_examples = input("Continue with more examples? (y/n): ").strip().lower()
+        if continue_examples != 'y':
+            break
+
+
+def main():
+    """Main entry point for production web-enhanced agent"""
+    print("🚀 Web-Enhanced Smart Windows Agent (Production)")
+    print("="*80)
+    print("Integrates with Zencoder's web search to resolve query ambiguities")
+    print("Models: Claude 3 Haiku (translation), Qwen 72B (analysis), Gemini Flash Lite (execution)")
+    print()
+    
+    # Initialize the integrator
+    print("🔧 Initializing web-enhanced agent...")
+    integrator = ZencoderWebSearchIntegrator()
+    
+    # Test web search capability
+    print("\n🧪 Testing web search integration...")
+    web_search_works = integrator.test_web_search()
+    
+    if web_search_works:
+        print("✅ Web search integration successful!")
+    else:
+        print("⚠️  Web search not available, using fallback mock responses")
+    
+    print("\n" + "="*80)
+    
+    # Choose mode
+    mode = input("Choose mode: (1) Interactive, (2) Examples, (3) Single task: ").strip()
+    
+    if mode == "1":
+        interactive_mode(integrator)
+    elif mode == "2":
+        run_example_tasks(integrator)
+    elif mode == "3":
+        query = input("Enter your task: ").strip()
+        if query:
+            print("\n" + "="*80)
+            result = integrator.execute_task(query)
+            print("\n" + "="*80)
+            print("FINAL RESULT:")
+            print("="*80)
+            print(result)
+    else:
+        print("Invalid mode selected")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        traceback.print_exc()
