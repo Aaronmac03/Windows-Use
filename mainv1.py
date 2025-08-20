@@ -28,24 +28,25 @@ class TaskAnalyzer:
     def analyze(self, query: str) -> List[str]:
         """Convert user query into specific step-by-step instructions"""
         
-        prompt = f"""You are a Windows automation expert. Convert this request into EXACT steps.
+        # Simplified prompt that focuses on HIGH-LEVEL guidance
+        prompt = f"""You are a Windows automation expert. Convert this request into clear guidance steps.
 
-CRITICAL RULES:
-- Use EXACT button names and menu items (e.g., "Start button", not "Windows menu")
-- Include what to wait for after each action
-- Be specific about locations (e.g., "bottom-left corner", "top menu bar")
-- Keep each instruction under 20 words
-- Maximum 10 instructions total
+RULES:
+- Focus on WHAT to do, not HOW to click (the agent knows how to click)
+- Be specific about app names and URLs
+- Include key search terms and button names
+- Maximum 8 high-level steps
+- Each step should guide towards the goal
 
 User request: {query}
 
-Return ONLY a JSON array of instruction strings, like:
-["Click the Start button in the taskbar",
- "Wait for Start menu to appear",
- "Type 'notepad' in the search box",
- "Press Enter key"]
+Return ONLY a JSON array of guidance steps, like:
+["Open Google Chrome browser",
+ "Navigate to lowes.com website",
+ "Search for flat head screwdriver",
+ "Select a cheap option and add to cart"]
 
-Instructions:"""
+Steps:"""
 
         response = self.llm.invoke(prompt)
         return self._parse_instructions(response.content)
@@ -60,10 +61,15 @@ Instructions:"""
                 content = content.split('```')[1].split('```')[0]
             
             instructions = json.loads(content.strip())
-            return instructions[:10]  # Cap at 10 instructions
-        except:
-            # Fallback parsing
+            # Ensure it's a list and cap at 8 instructions
+            if isinstance(instructions, list):
+                return instructions[:8]
             return []
+        except Exception as e:
+            print(f"Warning: Failed to parse JSON: {e}")
+            # Try basic line splitting as fallback
+            lines = content.strip().split('\n')
+            return [line.strip('- •123456789.[] "\'') for line in lines if line.strip()][:8]
 
 class SmartWindowsAgent:
     """Enhanced Windows agent with instruction generation"""
@@ -75,39 +81,71 @@ class SmartWindowsAgent:
             model='gemini-2.5-flash-lite',
             temperature=0.0
         )
-        
+    
     def execute(self, query: str) -> str:
         """Execute task with generated instructions"""
         
+        print("="*60)
+        print(f"TASK: {query}")
+        print("="*60)
+        
         # Generate instructions
-        print(f"Analyzing task: {query}")
+        print("\n🔍 Analyzing task...")
         instructions = self.analyzer.analyze(query)
         
         if not instructions:
+            print("❌ Failed to understand task")
             return "Failed to understand task"
         
-        print(f"Generated {len(instructions)} instructions:")
+        print(f"\n📋 Generated {len(instructions)} instructions:")
         for i, inst in enumerate(instructions, 1):
-            print(f"  {i}. {inst}")
+            print(f"   {i}. {inst}")
         
         # Execute with Windows-Use
-        print("\nExecuting...")
-        agent = Agent(
-            llm=self.executor_llm,
-            instructions=instructions,  # Pass our generated instructions
-            browser='chrome',
-            use_vision=False,  # Keep vision off for cost
-            max_steps=30
-        )
+        print(f"\n🤖 Executing with Windows-Use agent...")
+        print(f"   Model: gemini-2.5-flash-lite")
+        print(f"   Vision: False")
+        print(f"   Max steps: 30")
+        print("\n" + "-"*60)
         
-        result = agent.invoke(query)
-        return result.content or result.error or "No response"
+        try:
+            agent = Agent(
+                llm=self.executor_llm,
+                instructions=instructions,  # Pass our generated instructions
+                browser='chrome',
+                use_vision=False,  # Keep vision off for cost
+                max_steps=30
+            )
+            
+            result = agent.invoke(query)
+            
+            print("-"*60)
+            
+            if result.error:
+                print(f"\n❌ Execution error: {result.error}")
+                return f"Error: {result.error}"
+            
+            print(f"\n✅ Task completed")
+            return result.content or "Task completed successfully"
+            
+        except Exception as e:
+            print(f"\n❌ Unexpected error: {str(e)}")
+            return f"Error: {str(e)}"
 
 def main():
+    """Main entry point"""
     agent = SmartWindowsAgent()
+    
+    # Get query from user
     query = input("Enter your task: ")
+    
+    # Execute
     result = agent.execute(query)
-    print(f"\nResult: {result}")
+    
+    print("\n" + "="*60)
+    print("FINAL RESULT:")
+    print("="*60)
+    print(result)
 
 if __name__ == "__main__":
     main()
