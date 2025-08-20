@@ -153,6 +153,20 @@ if __name__ == "__main__":
 
 ## Task 2: Implement V2 - Multi-Stage Execution
 
+### **CURRENT STATUS: IN PROGRESS - NOT YET SUCCESSFUL**
+
+**Key Challenges Identified:**
+- Multi-stage coordination complexity higher than anticipated
+- Stage validation and error handling between stages needs refinement
+- Goal-oriented instructions vs step-by-step instructions balance still being tuned
+
+**Lessons Learned So Far:**
+- Each stage needs clear success criteria that can be programmatically verified
+- Stage transitions require more sophisticated state management
+- Windows-Use works best with atomic goals per stage, not complex multi-step coordination within a single stage
+
+---
+
 ### What You're Building
 Break complex tasks into stages, execute each with focused instructions, verify completion before proceeding.
 

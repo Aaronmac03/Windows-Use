@@ -93,16 +93,20 @@ agent.print_response(query)
 - **Cost**: ~$0.004 per task
 - **Key Learning**: Windows-Use works better with goals rather than detailed step-by-step instructions. Revised approach focuses on WHAT to do, not HOW to click.
 
-### 2025-01-11 — V2 Multi-Stage Execution
-- **What changed**: Added MultiStageAgent that breaks complex tasks into goal-oriented stages, each executed independently
-- **Files**: Created mainv2.py, test_v2.py for validation
-- **Models**: Qwen 72B for task decomposition (~$0.001), Gemini Flash Lite for stage execution (~$0.003 per stage), Gemini Flash Lite for validation (~$0.001)
+### 2025-01-11 — V2 Multi-Stage Execution [IN PROGRESS - NOT YET SUCCESSFUL]
+- **What changed**: Attempting to add MultiStageAgent that breaks complex tasks into goal-oriented stages, each executed independently
+- **Files**: mainv2.py (in development), test_v2.py for validation (planned)
+- **Models**: Qwen 72B for task decomposition (~$0.001), Gemini Flash Lite for stage execution (~$0.003 per stage)
 - **Architecture**: Task Decomposer → Stage Executor → Stage Validator → Combined Results
-- **Result**: Successfully decomposes complex tasks into logical stages:
-  - "Open Notepad and type Hello World" → 2 stages (Open → Type)
-  - "Research iPhone prices and create comparison spreadsheet" → 3 stages (Research → Collect → Spreadsheet)  
-  - "Check weather for tomorrow and write it in a text file" → 4 stages (Weather → Open file → Write → Save)
-  - "Open Settings and change display brightness to 50%" → 3 stages (Open Settings → Navigate → Adjust)
-- **Key Innovation**: Each stage is a simple goal statement that Windows-Use can accomplish independently
-- **Cost**: ~$0.005-0.015 per complex task (depends on number of stages)
-- **Next**: V3 adaptive model selection based on task complexity
+- **Current Challenges**:
+  - Stage coordination complexity higher than anticipated
+  - Difficulty in programmatic validation of stage completion
+  - Balancing goal-oriented vs step-by-step instructions per stage
+  - State management between stages needs refinement
+- **Key Learnings So Far**:
+  - Windows-Use works best with atomic, focused goals per stage
+  - Complex multi-step coordination within a single stage causes conflicts
+  - Each stage requires clear, verifiable success criteria
+  - Stage transitions need more sophisticated error handling
+- **Status**: Implementation in progress, requires further refinement before success
+- **Next**: Complete V2 implementation, then V3 adaptive model selection
