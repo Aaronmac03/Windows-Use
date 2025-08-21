@@ -5,7 +5,11 @@ Validates basic functionality without requiring full agent execution
 
 import os
 import json
+from dotenv import load_dotenv
 from main_v1_web_serper import serper_search, cached_serper_search, create_serper_search_function, SerperWebEnhancedTranslator
+
+# Load environment variables
+load_dotenv()
 
 def test_serper_basic_search():
     """Test basic Serper search functionality"""
