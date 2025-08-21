@@ -1,0 +1,114 @@
+Support Ticket B — “Use Serper (cheap SERP) with liberal planning search, create main_v1_web_serper.py”
+
+Background & goal
+Serper’s Google SERP API is much cheaper (publicly advertised from $0.30 per 1,000 queries; first 2,500 free). That’s ~$0.0003/query versus OpenRouter’s web plugin max $0.02/request—over an order of magnitude cheaper, so we can be more liberal in the planning stage while still avoiding mid-task searches. 
+Serper
+X (formerly Twitter)
+OpenRouter
+
+Deliverable
+Create a new script main_v1_web_serper.py that:
+
+Uses Serper as the search provider for planning-only ambiguity resolution.
+
+Allows more generous planning searches (default up to 5 calls, still batched where possible).
+
+Keeps all configuration inside the script; accepts a --serper-key CLI flag (env fallback optional).
+
+Adds simple in-memory LRU caching for repeated queries in one run.
+
+Prints actual planning search count and a cost estimate using Serper’s pricing.
+
+Acceptance criteria
+
+Script runs without touching .env.
+
+With --serper-key YOUR_KEY, planning can issue up to 5 searches (batched when possible).
+
+No mid-task searches.
+
+Logs show web_search_calls and Serper estimated spend (calls × $0.0003 at starter tier). 
+Serper
+
+Implementation plan (code-level)
+
+New file: main_v1_web_serper.py, copy structure from current script but replace search layer.
+
+Serper client (minimal)
+
+import argparse, requests, functools, time
+
+SERPER_PRICE_PER_QUERY = 0.0003  # $0.30 / 1000
+DEFAULT_MAX_PLANNING_SEARCHES = 5  # more liberal than A
+
+def serper_search(q: str, api_key: str, num: int = 5):
+    # POST https://google.serper.dev/search
+    # headers: {'X-API-KEY': api_key, 'Content-Type': 'application/json'}
+    # body: {"q": q, "num": num}
+    r = requests.post("https://google.serper.dev/search",
+                      headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+                      json={"q": q, "num": num}, timeout=15)
+    r.raise_for_status()
+    return r.json()
+
+
+In-script config & CLI (no .env dependency)
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--serper-key", type=str, default=None,
+                    help="Serper API key (prefer CLI; falls back to SERPER_API_KEY env if unset)")
+parser.add_argument("--max-planning-searches", type=int, default=DEFAULT_MAX_PLANNING_SEARCHES)
+args = parser.parse_args()
+
+SERPER_KEY = args.serper_key or os.getenv("SERPER_API_KEY")
+if not SERPER_KEY:
+    raise RuntimeError("Provide --serper-key or SERPER_API_KEY")
+
+
+LRU cache + capped planning
+
+from functools import lru_cache
+
+@lru_cache(maxsize=64)
+def cached_serper(q):
+    return serper_search(q, SERPER_KEY, num=5)
+
+self.search_calls = 0
+def plan_with_serper(user_query: str):
+    ambiguities = extract_ambiguities(user_query)
+    if not ambiguities:
+        return naive_plan(user_query)
+
+    batches = batch_ambiguities(ambiguities, target_batches=2)  # fewer, larger
+    contexts = []
+    for bq in batches:
+        if self.search_calls >= args.max_planning_searches:
+            break
+        self.search_calls += 1
+        contexts.append(cached_serper(bq))
+    return refine_plan(user_query, merge(contexts))
+
+
+No runtime search
+
+Same guard as Ticket A: ALLOW_RUNTIME_SEARCH = False.
+
+Cost telemetry
+
+est = self.search_calls * SERPER_PRICE_PER_QUERY
+print(f"[cost] serper_search_calls={self.search_calls}/{args.max_planning_searches} "
+      f"~est=${est:.4f} (Serper starter pricing)")
+
+
+(Serper pricing reference). 
+Serper
+
+Testing
+
+Run with/without ambiguities; confirm up to 5 planning calls, none during execution.
+
+Repeat the same prompt twice in one run to see LRU cache hit (search_calls doesn’t increase).
+
+Notes
+
+If you later prefer Brave or Google CSE, swap the small client: Brave’s base plan is $3/1k; Google CSE is 100 free/day, then $5/1k.
