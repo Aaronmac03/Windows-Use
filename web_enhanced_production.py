@@ -1,54 +1,68 @@
 """
 Production-ready Web-Enhanced Smart Windows Agent
-Integrates with actual web_search tool in the Zencoder environment
+Uses OpenRouter :online models for real-time web search capabilities
 """
 
 import sys
 import os
 import traceback
+from typing import Optional
 
-# Import the web-enhanced agent
+# Import the web-enhanced agent and search function
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from mainv1_web_enhanced import WebEnhancedSmartWindowsAgent
 
+try:
+    from web_search import create_web_search_function
+except ImportError:
+    create_web_search_function = None
 
-class ZencoderWebSearchIntegrator:
-    """Integrates the web-enhanced agent with Zencoder's web search capabilities"""
+
+class ProductionWebSearchIntegrator:
+    """Production-ready integrator for web-enhanced Windows automation"""
     
-    def __init__(self):
+    def __init__(self, fallback_to_mock: bool = True):
         self.agent = None
+        self.fallback_to_mock = fallback_to_mock
         self._setup_web_search()
     
     def _setup_web_search(self):
-        """Set up the web search integration"""
+        """Set up the OpenRouter :online web search integration"""
         try:
-            # In the Zencoder environment, the web_search function should be available
-            # We'll create a wrapper that handles the integration properly
-            
-            def web_search_wrapper(query: str) -> str:
-                """Wrapper for the Zencoder web_search tool"""
-                try:
-                    # This will use the actual web_search tool available in Zencoder
-                    # Import it dynamically to avoid issues if not available
-                    import __main__
-                    if hasattr(__main__, 'web_search'):
-                        result = __main__.web_search(query)
-                        return str(result)
-                    else:
-                        # Fallback: try to import from the tool environment
-                        from zencoder_tools import web_search
-                        result = web_search(query)
-                        return str(result)
-                        
-                except ImportError:
-                    # If web_search is not available, provide a helpful message
-                    return f"Web search not available. Query was: {query}"
-                except Exception as e:
-                    return f"Web search error for '{query}': {str(e)}"
+            if create_web_search_function is not None:
+                # Primary: Use OpenRouter :online web search
+                web_search_func = create_web_search_function(
+                    api="openrouter_online",
+                    openrouter_model="openai/gpt-4o-mini-search-preview:online",
+                    max_results=3,
+                    cache_results=True,
+                    cache_ttl_s=1800,  # 30-minute cache
+                )
+                print("🌐 Production agent initialized with OpenRouter :online web search")
+                
+            else:
+                # Fallback: Mock search or error
+                if self.fallback_to_mock:
+                    def mock_web_search(query: str) -> dict:
+                        return {
+                            "results": [
+                                {
+                                    "title": "Mock Production Result", 
+                                    "url": "https://example.com", 
+                                    "snippet": f"Production mock search results for: {query}",
+                                    "source": "mock"
+                                }
+                            ],
+                            "count": 1
+                        }
+                    web_search_func = mock_web_search
+                    print("⚠️  OpenRouter web search not available, using mock fallback")
+                else:
+                    raise RuntimeError("OpenRouter web search required but not available")
             
             # Initialize the agent with web search capability
-            self.agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_wrapper)
-            print("✅ Web-enhanced agent initialized with live web search")
+            self.agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
+            print("✅ Production web-enhanced agent ready")
             
         except Exception as e:
             print(f"⚠️  Warning: Could not set up web search integration: {e}")
@@ -85,7 +99,7 @@ class ZencoderWebSearchIntegrator:
             return False
 
 
-def interactive_mode(integrator: ZencoderWebSearchIntegrator):
+def interactive_mode(integrator: ProductionWebSearchIntegrator):
     """Interactive mode for testing the web-enhanced agent"""
     print("\n🎯 INTERACTIVE MODE")
     print("="*60)
@@ -122,7 +136,7 @@ def interactive_mode(integrator: ZencoderWebSearchIntegrator):
             print(f"Error: {e}")
 
 
-def run_example_tasks(integrator: ZencoderWebSearchIntegrator):
+def run_example_tasks(integrator: ProductionWebSearchIntegrator):
     """Run some example tasks to demonstrate capabilities"""
     print("\n🌟 EXAMPLE TASKS")
     print("="*60)
@@ -168,13 +182,13 @@ def main():
     """Main entry point for production web-enhanced agent"""
     print("🚀 Web-Enhanced Smart Windows Agent (Production)")
     print("="*80)
-    print("Integrates with Zencoder's web search to resolve query ambiguities")
-    print("Models: Claude 3 Haiku (translation), Qwen 72B (analysis), Gemini Flash Lite (execution)")
+    print("Uses OpenRouter :online models to resolve query ambiguities")
+    print("Models: GPT-4o Mini Search (translation & web search), Qwen 72B (analysis), Gemini Flash Lite (execution)")
     print()
     
     # Initialize the integrator
     print("🔧 Initializing web-enhanced agent...")
-    integrator = ZencoderWebSearchIntegrator()
+    integrator = ProductionWebSearchIntegrator()
     
     # Test web search capability
     print("\n🧪 Testing web search integration...")

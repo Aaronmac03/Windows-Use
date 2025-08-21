@@ -1,6 +1,6 @@
 """
 Practical example demonstrating the Web-Enhanced Smart Windows Agent
-This example shows how to use the agent with real web search in the Zencoder environment
+This example shows how to use the agent with OpenRouter :online web search
 """
 
 import os
@@ -12,37 +12,58 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from mainv1_web_enhanced import WebEnhancedSmartWindowsAgent
 
+try:
+    from web_search import create_web_search_function
+    WEB_SEARCH_AVAILABLE = True
+except ImportError:
+    WEB_SEARCH_AVAILABLE = False
 
-def create_web_search_function():
+
+def setup_web_search_function():
     """
-    Create a web search function that works in the Zencoder environment.
-    This function will use the web_search tool that's available.
+    Set up web search function with OpenRouter :online capability.
+    Falls back to simulation if not available.
     """
-    
-    def web_search_wrapper(query: str) -> str:
-        """
-        Wrapper that uses the web_search tool available in Zencoder
-        """
+    if WEB_SEARCH_AVAILABLE:
         try:
-            # In Zencoder environment, we can access the web_search function
-            # This is a placeholder for the actual implementation
-            
-            # The actual web_search function will be injected by the environment
-            # For demonstration, we'll show how it would work
-            
-            print(f"🔍 Searching web for: {query}")
-            
-            # This would be the actual call in the Zencoder environment:
-            # result = web_search(query)
-            # return str(result)
-            
-            # For this example, we'll simulate realistic responses
-            return simulate_web_search(query)
-            
+            # Use real OpenRouter :online web search
+            print("🌐 Setting up OpenRouter :online web search...")
+            return create_web_search_function(
+                api="openrouter_online",
+                openrouter_model="openai/gpt-4o-mini-search-preview:online",
+                max_results=3,
+                cache_results=True,
+                cache_ttl_s=1800,
+            )
         except Exception as e:
-            return f"Web search error: {str(e)}"
+            print(f"⚠️  Could not initialize OpenRouter web search: {e}")
+            print("Falling back to simulated responses...")
+    else:
+        print("⚠️  web_search.py not available, using simulated responses...")
+    
+    # Fallback to simulation
+    def web_search_wrapper(query: str) -> dict:
+        """Simulated web search for demonstration"""
+        print(f"🔍 Simulating web search for: {query}")
+        return {
+            "results": [
+                {
+                    "title": "Simulated Search Result",
+                    "url": "https://example.com",
+                    "snippet": simulate_web_search(query),
+                    "source": "simulation"
+                }
+            ],
+            "count": 1
+        }
     
     return web_search_wrapper
+
+
+# Keep the old function name for backward compatibility
+def create_web_search_function():
+    """Legacy function name - redirects to setup_web_search_function"""
+    return setup_web_search_function()
 
 
 def simulate_web_search(query: str) -> str:
@@ -184,8 +205,8 @@ def demonstrate_basic_usage():
     print("🎯 DEMO: Basic Usage")
     print("=" * 60)
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Set up web search function
+    web_search_func = setup_web_search_function()
     
     # Initialize agent
     agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
@@ -211,8 +232,8 @@ def demonstrate_complex_query():
     print("\n🎯 DEMO: Complex Query with Multiple Ambiguities") 
     print("=" * 60)
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Set up web search function
+    web_search_func = setup_web_search_function()
     
     # Initialize agent
     agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
@@ -243,8 +264,8 @@ def demonstrate_mid_task_clarification():
     print("\n🎯 DEMO: Mid-Task Clarification")
     print("=" * 60)
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Set up web search function
+    web_search_func = setup_web_search_function()
     
     # Initialize agent
     agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
@@ -279,8 +300,8 @@ def interactive_demo():
     print("Type 'quit' to exit.")
     print()
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Set up web search function
+    web_search_func = setup_web_search_function()
     
     # Initialize agent
     agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
@@ -330,8 +351,9 @@ def main():
     print()
     
     print("🌐 Web Search Integration:")
+    print("  • OpenRouter :online capability (GPT-4o Mini Search Preview)")
     print("  • Automatic ambiguity detection")
-    print("  • Real-time web search resolution") 
+    print("  • Real-time web search resolution with caching") 
     print("  • Query enhancement and rewriting")
     print("  • Mid-task clarification support")
     print()

@@ -8,81 +8,31 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from mainv1_web_enhanced import WebEnhancedSmartWindowsAgent
+from web_search import create_web_search_function
 
 
-def create_web_search_function():
-    """
-    Create a web search function using the available tools in the environment.
-    In a real IDE environment with Zencoder, the web_search tool would be available.
-    """
-    def web_search_wrapper(query: str) -> str:
-        try:
-            # In the actual IDE environment, this would use the web_search tool
-            # For now, we'll create a mock that simulates realistic responses
-            
-            # Mock responses for common query types
-            mock_responses = {
-                "lowe's store locations near bashford manor": """
-                Lowe's Store Locator Results:
-                
-                1. Lowe's Home Improvement - Middletown
-                   11800 Shelbyville Rd, Middletown, KY 40243
-                   Distance: 2.3 miles from Bashford Manor
-                   Phone: (502) 244-0527
-                   Hours: Mon-Sun 6:00 AM - 10:00 PM
-                   
-                2. Lowe's Home Improvement - Hurstbourne
-                   4600 Shelbyville Rd, Louisville, KY 40207
-                   Distance: 4.1 miles from Bashford Manor
-                   Phone: (502) 895-5493
-                   Hours: Mon-Sun 6:00 AM - 10:00 PM
-                """,
-                
-                "affordable screwdriver prices at lowe's": """
-                Affordable Screwdrivers at Lowe's:
-                
-                1. Kobalt 6-in-1 Multi-Bit Screwdriver - $3.98
-                2. CRAFTSMAN 2-Piece Screwdriver Set - $4.98
-                3. Project Source 4-in-1 Screwdriver - $2.48
-                4. Kobalt Phillips/Slotted Screwdriver Set - $7.98
-                5. DEWALT 8-in-1 Multi-Bit Screwdriver - $12.98
-                
-                Most popular budget option: Project Source 4-in-1 at $2.48
-                """,
-                
-                "cheap flat head screwdriver": """
-                Cheap Flat Head Screwdrivers:
-                
-                Top Budget Options:
-                1. Project Source 6-inch Flat Head Screwdriver - $1.98
-                2. Kobalt Standard Flat Head Screwdriver - $2.48
-                3. CRAFTSMAN 6-in Slotted Screwdriver - $3.48
-                4. Husky 4-in-1 Multi-Tip Screwdriver - $2.98
-                
-                Recommended: Project Source 6-inch for best value at under $2
-                """
-            }
-            
-            # Find the best matching mock response
-            query_lower = query.lower()
-            for key, response in mock_responses.items():
-                if any(word in query_lower for word in key.split()):
-                    print(f"🔍 Mock web search: {query}")
-                    return response
-            
-            # Default response for unmatched queries
-            return f"""
-            Search Results for: {query}
-            
-            [This is a mock response for demonstration]
-            Various results related to your query would appear here in a real web search.
-            The web-enhanced translator would extract relevant information from these results.
-            """
-            
-        except Exception as e:
-            return f"Web search error: {str(e)}"
-    
-    return web_search_wrapper
+# Real web search via OpenRouter :online (no plugin). To keep the demo safe without a key,
+# you can fall back to the existing mock by commenting these lines.
+try:
+    web_search_func = create_web_search_function(
+        api="openrouter_online",
+        openrouter_model="openai/gpt-4o-mini-search-preview:online",
+        max_results=3,
+        cache_results=True,
+        cache_ttl_s=1800,
+    )
+    print("🌐 Using real OpenRouter web search")
+except Exception as e:
+    print(f"⚠️  OpenRouter web search not available ({str(e)}), falling back to mock")
+    # Fallback mock for environments without web access
+    def mock_web_search(query: str) -> dict:
+        return {
+            "results": [
+                {"title": "Mock Result", "url": "https://example.com", "snippet": f"Mock search results for: {query}", "source": "mock"}
+            ],
+            "count": 1
+        }
+    web_search_func = mock_web_search
 
 
 def demo_basic_usage():
@@ -90,8 +40,7 @@ def demo_basic_usage():
     print("🌟 DEMO: Basic Web-Enhanced Agent Usage")
     print("="*60)
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Web search function already initialized above
     
     # Initialize the agent with web search capability
     agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
@@ -113,8 +62,7 @@ def demo_mid_task_clarification():
     print("\n🌟 DEMO: Mid-Task Clarification")
     print("="*60)
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Web search function already initialized above
     
     # Initialize the agent
     agent = WebEnhancedSmartWindowsAgent(web_search_func=web_search_func)
@@ -139,8 +87,7 @@ def demo_ambiguity_identification():
     print("\n🌟 DEMO: Ambiguity Identification")
     print("="*60)
     
-    # Create web search function
-    web_search_func = create_web_search_function()
+    # Web search function already initialized above
     
     # Initialize just the translator
     from mainv1_web_enhanced import WebEnhancedTranslator

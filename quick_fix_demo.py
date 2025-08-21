@@ -101,7 +101,7 @@ def demonstrate_manual_model_selection():
     
     # List of models to try (in order of preference)
     model_options = [
-        "anthropic/claude-3-haiku",
+        "openai/gpt-4o-mini-search-preview:online",
         "qwen/qwen-2.5-72b-instruct", 
         "meta-llama/llama-3.1-8b-instruct",  # Free option
         "google/gemini-2.0-flash-thinking-exp"
@@ -109,7 +109,7 @@ def demonstrate_manual_model_selection():
     
     print("Available model options:")
     for i, model in enumerate(model_options, 1):
-        cost = "~$0.001" if "claude" in model or "qwen" in model else "Free" if "llama" in model else "~$0.001"
+        cost = "~$0.001" if "gpt-4o-mini" in model or "qwen" in model else "Free" if "llama" in model else "~$0.001"
         print(f"   {i}. {model} ({cost})")
     
     try:
@@ -164,7 +164,7 @@ from mainv1_web_enhanced import WebEnhancedSmartWindowsAgent
 
 # Specify a working model manually
 agent = WebEnhancedSmartWindowsAgent(
-    translation_model="anthropic/claude-3-haiku"
+    translation_model="openai/gpt-4o-mini-search-preview:online"
 )
 result = agent.execute("Find a good coffee shop nearby")
 """

@@ -63,7 +63,7 @@ class ModelTester:
         
         # Models to test (in order of preference for web-enhanced agent)
         models_to_test = [
-            "anthropic/claude-3-haiku",           # Preferred for web analysis
+            "openai/gpt-4o-mini-search-preview:online",  # Preferred for web analysis & search
             "qwen/qwen-2.5-72b-instruct",        # Good fallback
             "google/gemini-2.0-flash-thinking-exp",  # Alternative option
             "meta-llama/llama-3.1-8b-instruct",  # Free option
